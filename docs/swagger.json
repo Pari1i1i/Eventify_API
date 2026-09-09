@@ -1,0 +1,2780 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Production-Ready RESTful API for Eventify Platform (Web Admin, Panitia Organizer, Customer Portal, \u0026 Flutter Mobile QR Scanner).",
+        "title": "Eventify API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Eventify Support Team",
+            "email": "support@eventify.local"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/admin/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Summary of events, orders, tickets sold, attendance, and revenue",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Analytics"
+                ],
+                "summary": "Get admin analytics \u0026 overview metrics (Admin only)",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard metrics",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.DashboardStatsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/events": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "View and filter all events from all organizers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Events"
+                ],
+                "summary": "List all events with all statuses (Admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter status (draft, published, completed, cancelled)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Events list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.EventDetailResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/events/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Moderation tool to publish, complete, or cancel an event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Events"
+                ],
+                "summary": "Approve or change event status (Admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New status payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateEventStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all orders across the entire platform",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Orders"
+                ],
+                "summary": "List all orders (Admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All orders",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.OrderResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Paginated list of registered users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Users"
+                ],
+                "summary": "List all users (Admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.UserProfile"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/{id}/role": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update role of a specific user (1: Admin, 2: Panitia, 3: Customer)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin - Users"
+                ],
+                "summary": "Change user role (Admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Role update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateUserRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/change-password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Change password for the current authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "description": "Change Password Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Current password incorrect or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/forgot-password": {
+            "post": {
+                "description": "Generates a secure reset token sent to email (simulated return for API development)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request password reset token",
+                "parameters": [
+                    {
+                        "description": "Forgot Password Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset instructions sent",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Authenticate user and return JWT bearer token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login user",
+                "parameters": [
+                    {
+                        "description": "Login Credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid credentials or request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve current authenticated user profile",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get logged-in user profile",
+                "responses": {
+                    "200": {
+                        "description": "Profile retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserProfile"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update current authenticated user profile information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update profile",
+                "parameters": [
+                    {
+                        "description": "Update Profile Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserProfile"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "description": "Register a new user with default customer role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new customer",
+                "parameters": [
+                    {
+                        "description": "User Registration Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.AuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/reset-password": {
+            "post": {
+                "description": "Reset account password using the token received from forgot-password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password using token",
+                "parameters": [
+                    {
+                        "description": "Reset Password Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password has been successfully reset",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/events": {
+            "get": {
+                "description": "Browse all published events with filtering and search",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public - Events"
+                ],
+                "summary": "List published events (Public)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search name, location, or description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter end date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Events retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.EventDetailResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/events/id/{id}": {
+            "get": {
+                "description": "Retrieve published event detail and tiers by numerical ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public - Events"
+                ],
+                "summary": "Get published event detail by ID (Public)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event detail retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found or not published",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/events/{slug}": {
+            "get": {
+                "description": "Retrieve single event detail and active ticket tiers by slug (Only published events)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public - Events"
+                ],
+                "summary": "Get event detail by slug (Public)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event Slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event detail retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found or not published",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Book tickets for an event across one or more tiers (with atomic quota check)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders \u0026 Bookings"
+                ],
+                "summary": "Order event tickets",
+                "parameters": [
+                    {
+                        "description": "Order Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Order created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.OrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Quota exceeded or invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/my-orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve list of orders made by logged-in customer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders \u0026 Bookings"
+                ],
+                "summary": "List customer's orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orders retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.OrderResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "View full order details and payment status by order code",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders \u0026 Bookings"
+                ],
+                "summary": "Get order detail by code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Code (e.g. ORD-20260909-XXXX)",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order detail retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.OrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/events": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create an event with draft or published status and optional initial ticket tiers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "Create a new event (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "description": "Event Creation Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateEventRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Event created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/events/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "View event detail including draft/cancelled status for owner/admin preview",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "Preview organizer event detail by ID (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event detail retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update existing event details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "Update event (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Event Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateEventRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.EventDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an event",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "Soft delete event (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/events/{id}/banner": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload image file (jpg, jpeg, png, webp) for event banner",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "Upload event banner image (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Banner Image File",
+                        "name": "banner",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Banner uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file upload",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/my-events": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve events created by logged-in organizer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events Management"
+                ],
+                "summary": "List organizer's own events (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organizer events retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.EventDetailResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/ticket-tiers": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create tier like VIP, Regular, Early Bird",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ticket Tiers"
+                ],
+                "summary": "Add ticket tier to event (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "description": "Ticket Tier Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateTicketTierRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Ticket tier created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TicketTierResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/organizer/ticket-tiers/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update tier pricing, quota, date sale window, or status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ticket Tiers"
+                ],
+                "summary": "Update ticket tier (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ticket Tier ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Ticket Tier Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateTicketTierRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket tier updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TicketTierResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete ticket tier (only allowed if no tickets sold yet)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ticket Tiers"
+                ],
+                "summary": "Delete ticket tier (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ticket Tier ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket tier deleted",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Cannot delete tier with sold tickets",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/webhook": {
+            "post": {
+                "description": "Handles notifications from payment gateways (Midtrans SHA512 signature or Xendit callback token) and generates tickets upon paid status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments \u0026 Gateway"
+                ],
+                "summary": "Payment gateway callback webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Xendit Callback Token or Dev Secret",
+                        "name": "x-callback-token",
+                        "in": "header"
+                    },
+                    {
+                        "description": "Payment Webhook Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaymentWebhookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment status updated",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized / Invalid signature",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scanner/check-in": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mobile QR scanner endpoint to check-in attendee and invalidate reuse",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Gate Check-In"
+                ],
+                "summary": "Scan / Check-in ticket at entrance (Panitia \u0026 Admin)",
+                "parameters": [
+                    {
+                        "description": "Ticket QR String",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CheckInRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-in successful",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.CheckInResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Ticket invalid or already checked in",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tickets/my-tickets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all issued tickets belonging to the logged-in customer for mobile app display",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer - Tickets"
+                ],
+                "summary": "List customer tickets (QR Codes)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tickets list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/utils.PaginatedData"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/dto.TicketResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tickets/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "View ticket details by ticket code string",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Get ticket detail by QR Code string",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ticket Code (e.g. EVT-TK-1A2B3C4D5E6F)",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ticket details",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.TicketResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Ticket not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserProfile"
+                }
+            }
+        },
+        "dto.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "new_secret123"
+                },
+                "old_password": {
+                    "type": "string",
+                    "example": "old_secret"
+                }
+            }
+        },
+        "dto.CheckInRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "EVT-TK-1A2B3C4D5E6F"
+                }
+            }
+        },
+        "dto.CheckInResponse": {
+            "type": "object",
+            "properties": {
+                "checked_by": {
+                    "type": "string"
+                },
+                "checked_in_at": {
+                    "type": "string"
+                },
+                "customer_name": {
+                    "type": "string"
+                },
+                "event_name": {
+                    "type": "string"
+                },
+                "ticket_code": {
+                    "type": "string"
+                },
+                "ticket_id": {
+                    "type": "integer"
+                },
+                "tier_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateEventRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "end_at",
+                "location",
+                "name",
+                "start_at"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Biggest tech summit in Indonesia"
+                },
+                "end_at": {
+                    "type": "string",
+                    "example": "2026-10-15T18:00:00Z"
+                },
+                "location": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Jakarta Convention Center"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Tech Conference 2026"
+                },
+                "start_at": {
+                    "type": "string",
+                    "example": "2026-10-15T09:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "completed",
+                        "cancelled"
+                    ],
+                    "example": "draft"
+                },
+                "terms_conditions": {
+                    "type": "string",
+                    "example": "Tickets are non-refundable."
+                },
+                "ticket_tiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CreateTicketTierChild"
+                    }
+                }
+            }
+        },
+        "dto.CreateOrderRequest": {
+            "type": "object",
+            "required": [
+                "event_id",
+                "items"
+            ],
+            "properties": {
+                "event_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/dto.OrderItemInput"
+                    }
+                },
+                "payment_method": {
+                    "type": "string",
+                    "example": "qris"
+                }
+            }
+        },
+        "dto.CreateTicketTierChild": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Limited early bird tickets"
+                },
+                "end_sale_at": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "Early Bird"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 150000
+                },
+                "quota": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 100
+                },
+                "start_sale_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateTicketTierRequest": {
+            "type": "object",
+            "required": [
+                "event_id",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Free snacks and front row seat"
+                },
+                "end_sale_at": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "VIP"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 350000
+                },
+                "quota": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 50
+                },
+                "start_sale_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DashboardStatsResponse": {
+            "type": "object",
+            "properties": {
+                "paid_orders": {
+                    "type": "integer"
+                },
+                "published_events": {
+                    "type": "integer"
+                },
+                "total_checked_in": {
+                    "type": "integer"
+                },
+                "total_events": {
+                    "type": "integer"
+                },
+                "total_orders": {
+                    "type": "integer"
+                },
+                "total_revenue": {
+                    "type": "number"
+                },
+                "total_tickets_sold": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.EventDetailResponse": {
+            "type": "object",
+            "properties": {
+                "banner_path": {
+                    "type": "string"
+                },
+                "banner_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "integer"
+                },
+                "creator_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "start_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "terms_conditions": {
+                    "type": "string"
+                },
+                "ticket_tiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TicketTierResponse"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "customer@example.com"
+                }
+            }
+        },
+        "dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "fachri@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "secret123"
+                }
+            }
+        },
+        "dto.OrderItemInput": {
+            "type": "object",
+            "required": [
+                "quantity",
+                "ticket_tier_id"
+            ],
+            "properties": {
+                "quantity": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 1,
+                    "example": 2
+                },
+                "ticket_tier_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.OrderItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "ticket_tier_id": {
+                    "type": "integer"
+                },
+                "ticket_tier_name": {
+                    "type": "string"
+                },
+                "tickets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TicketResponse"
+                    }
+                }
+            }
+        },
+        "dto.OrderResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "type": "integer"
+                },
+                "event_name": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OrderItemResponse"
+                    }
+                },
+                "order_code": {
+                    "type": "string"
+                },
+                "payment_details": {
+                    "$ref": "#/definitions/dto.PaymentDetailResponse"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "total_tickets": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PaymentDetailResponse": {
+            "type": "object",
+            "properties": {
+                "gateway_reference": {
+                    "type": "string"
+                },
+                "paid_at": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "qr_url": {
+                    "type": "string"
+                },
+                "va_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PaymentWebhookRequest": {
+            "type": "object",
+            "required": [
+                "order_code",
+                "status"
+            ],
+            "properties": {
+                "callback_token": {
+                    "description": "Xendit compatibility fields",
+                    "type": "string",
+                    "example": "token_abc123"
+                },
+                "gross_amount": {
+                    "type": "string",
+                    "example": "150000.00"
+                },
+                "order_code": {
+                    "type": "string",
+                    "example": "ORD-20260909-ABCD"
+                },
+                "payment_method": {
+                    "type": "string",
+                    "example": "qris"
+                },
+                "reference_id": {
+                    "type": "string",
+                    "example": "TRX-GATEWAY-123456"
+                },
+                "signature_key": {
+                    "type": "string",
+                    "example": "e763b0...512hash"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "paid",
+                        "failed",
+                        "cancelled"
+                    ],
+                    "example": "paid"
+                },
+                "status_code": {
+                    "description": "Midtrans compatibility fields",
+                    "type": "string",
+                    "example": "200"
+                }
+            }
+        },
+        "dto.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "fachri@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2,
+                    "example": "Fachri Ramadhan"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "secret123"
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 25,
+                    "example": "081234567890"
+                }
+            }
+        },
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "new_secret123"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6..."
+                }
+            }
+        },
+        "dto.TicketResponse": {
+            "type": "object",
+            "properties": {
+                "checked_in_at": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "customer_name": {
+                    "type": "string"
+                },
+                "event_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "ticket_tier_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TicketTierResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "end_sale_at": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_available": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quota": {
+                    "type": "integer"
+                },
+                "remaining_quota": {
+                    "type": "integer"
+                },
+                "start_sale_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateEventRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "end_at",
+                "location",
+                "name",
+                "start_at",
+                "status"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Updated description"
+                },
+                "end_at": {
+                    "type": "string",
+                    "example": "2026-11-01T17:00:00Z"
+                },
+                "location": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Bali Nusa Dua"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Tech Conference 2026 Updated"
+                },
+                "start_at": {
+                    "type": "string",
+                    "example": "2026-11-01T09:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "completed",
+                        "cancelled"
+                    ],
+                    "example": "published"
+                },
+                "terms_conditions": {
+                    "type": "string",
+                    "example": "Updated terms"
+                }
+            }
+        },
+        "dto.UpdateEventStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "completed",
+                        "cancelled"
+                    ],
+                    "example": "published"
+                }
+            }
+        },
+        "dto.UpdateProfileRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2,
+                    "example": "Fachri Ramadhan"
+                },
+                "phone": {
+                    "type": "string",
+                    "maxLength": 25,
+                    "example": "081234567899"
+                }
+            }
+        },
+        "dto.UpdateTicketTierRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Front row VIP seats"
+                },
+                "end_sale_at": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "VIP Pass"
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 400000
+                },
+                "quota": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 60
+                },
+                "start_sale_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateUserRoleRequest": {
+            "type": "object",
+            "required": [
+                "role_id"
+            ],
+            "properties": {
+                "role_id": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "example": 2
+                }
+            }
+        },
+        "dto.UserProfile": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "fachri@example.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Fachri Ramadhan"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "081234567890"
+                },
+                "role_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "role_name": {
+                    "type": "string",
+                    "example": "customer"
+                }
+            }
+        },
+        "utils.APIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "errors": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "utils.PaginatedData": {
+            "type": "object",
+            "properties": {
+                "items": {},
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and your JWT token. Example: \"Bearer eyJhbGciOi...\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
