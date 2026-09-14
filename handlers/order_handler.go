@@ -156,6 +156,21 @@ func (h *OrderHandler) PaymentWebhook(c *gin.Context) {
 	utils.JSONSuccess(c, http.StatusOK, "Payment status processed successfully", nil)
 }
 
+// PaymentNotification godoc
+// @Summary Midtrans payment notification callback endpoint
+// @Description Endpoint for Midtrans Dashboard Payment Notification URL (POST /api/v1/payments/notification)
+// @Tags Payments & Gateway
+// @Accept json
+// @Produce json
+// @Param request body dto.PaymentWebhookRequest true "Midtrans Payment Notification Payload"
+// @Success 200 {object} utils.APIResponse "Payment notification processed"
+// @Failure 400 {object} utils.APIResponse "Invalid notification payload"
+// @Failure 401 {object} utils.APIResponse "Invalid signature"
+// @Router /api/v1/payments/notification [post]
+func (h *OrderHandler) PaymentNotification(c *gin.Context) {
+	h.PaymentWebhook(c)
+}
+
 // GetMyTickets godoc
 // @Summary List customer tickets (QR Codes)
 // @Description Retrieve all issued tickets belonging to the logged-in customer for mobile app display

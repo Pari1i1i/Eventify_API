@@ -1707,6 +1707,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/payments/notification": {
+            "post": {
+                "description": "Endpoint for Midtrans Dashboard Payment Notification URL (POST /api/v1/payments/notification)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments \u0026 Gateway"
+                ],
+                "summary": "Midtrans payment notification callback endpoint",
+                "parameters": [
+                    {
+                        "description": "Midtrans Payment Notification Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaymentWebhookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment notification processed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid notification payload",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid signature",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payments/webhook": {
             "post": {
                 "description": "Handles notifications from payment gateways (Midtrans SHA512 signature or Xendit callback token) and generates tickets upon paid status",

@@ -114,7 +114,7 @@ func main() {
 
 		// ------------------ Payment Webhook (Midtrans / Xendit Signature Verified) ------------------
 		apiV1.POST("/payments/webhook", orderHandler.PaymentWebhook)
-		apiV1.POST("/payments/notification", orderHandler.PaymentWebhook)
+		apiV1.POST("/payments/notification", orderHandler.PaymentNotification)
 
 		// ------------------ Authenticated User / Customer Routes ------------------
 		authenticated := apiV1.Group("")

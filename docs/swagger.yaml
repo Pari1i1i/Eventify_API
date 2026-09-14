@@ -1595,6 +1595,37 @@ paths:
       summary: Update ticket tier (Panitia & Admin)
       tags:
       - Ticket Tiers
+  /api/v1/payments/notification:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint for Midtrans Dashboard Payment Notification URL (POST
+        /api/v1/payments/notification)
+      parameters:
+      - description: Midtrans Payment Notification Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PaymentWebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment notification processed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid notification payload
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "401":
+          description: Invalid signature
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Midtrans payment notification callback endpoint
+      tags:
+      - Payments & Gateway
   /api/v1/payments/webhook:
     post:
       consumes:
