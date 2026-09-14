@@ -127,7 +127,7 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 		ExpiresAt:     &expiresAt,
 	}
 
-	paymentMethod := "gateway"
+	paymentMethod := "midtrans"
 	if req.PaymentMethod != nil && *req.PaymentMethod != "" {
 		paymentMethod = *req.PaymentMethod
 	}
@@ -139,7 +139,31 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 		PaymentMethod: &paymentMethod,
 	}
 
-	if paymentStatus == models.PaymentStatusFree {
+	if totalAmount > 0 {
+		// Fetch customer details for Midtrans Snap Payload
+		user, _ := s.userRepo.FindByID(userID)
+		userName := ""
+		userEmail := ""
+		if user != nil {
+			userName = user.Name
+			userEmail = user.Email
+		}
+
+		snapResp, err := utils.CreateMidtransSnapTransaction(
+			s.cfg.MidtransServerKey,
+			orderCode,
+			totalAmount,
+			userName,
+			userEmail,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate Midtrans Snap transaction: %w", err)
+		}
+
+		paymentDetails.GatewayReference = &snapResp.Token
+		paymentDetails.RedirectURL = &snapResp.RedirectURL
+		paymentDetails.QrURL = &snapResp.RedirectURL
+	} else {
 		paymentDetails.PaidAt = &now
 	}
 
@@ -239,7 +263,9 @@ func (s *orderService) GetOrderByCode(userID uint64, userRole uint8, orderCode s
 			PaymentMethod:    order.PaymentDetails.PaymentMethod,
 			GatewayReference: order.PaymentDetails.GatewayReference,
 			VaNumber:         order.PaymentDetails.VaNumber,
+			RedirectURL:      order.PaymentDetails.RedirectURL,
 			QrURL:            order.PaymentDetails.QrURL,
+			SnapToken:        order.PaymentDetails.GatewayReference,
 			PaidAt:           order.PaymentDetails.PaidAt,
 		}
 	}
@@ -330,13 +356,21 @@ func (s *orderService) GetAllOrders(page, limit int) (*utils.PaginatedData, erro
 }
 
 func (s *orderService) HandlePaymentWebhook(headerToken string, req dto.PaymentWebhookRequest) error {
+	orderCode := req.OrderCode
+	if orderCode == "" && req.OrderID != nil {
+		orderCode = *req.OrderID
+	}
+	if orderCode == "" {
+		return errors.New("order_code or order_id is required")
+	}
+
 	// 1. Signature Verification:
 	// Support Midtrans SHA512 (order_id + status_code + gross_amount + ServerKey)
 	// Or Xendit Webhook Verification Token (via x-callback-token header or body)
 	verified := false
 
 	if req.SignatureKey != nil && *req.SignatureKey != "" && req.StatusCode != nil && req.GrossAmount != nil {
-		raw := fmt.Sprintf("%s%s%s%s", req.OrderCode, *req.StatusCode, *req.GrossAmount, s.cfg.MidtransServerKey)
+		raw := fmt.Sprintf("%s%s%s%s", orderCode, *req.StatusCode, *req.GrossAmount, s.cfg.MidtransServerKey)
 		hasher := sha512.New()
 		hasher.Write([]byte(raw))
 		calculatedSig := hex.EncodeToString(hasher.Sum(nil))
@@ -361,9 +395,30 @@ func (s *orderService) HandlePaymentWebhook(headerToken string, req dto.PaymentW
 		return errors.New("unauthorized: invalid webhook signature or verification token")
 	}
 
-	order, err := s.orderRepo.FindByOrderCode(req.OrderCode)
+	order, err := s.orderRepo.FindByOrderCode(orderCode)
 	if err != nil {
 		return errors.New("order not found")
+	}
+
+	// Determine new status from Midtrans transaction_status or status
+	var newStatus models.PaymentStatus
+	if req.TransactionStatus != nil {
+		switch strings.ToLower(*req.TransactionStatus) {
+		case "settlement", "capture":
+			newStatus = models.PaymentStatusPaid
+		case "pending":
+			newStatus = models.PaymentStatusPending
+		case "deny", "cancel":
+			newStatus = models.PaymentStatusCancelled
+		case "expire":
+			newStatus = models.PaymentStatusExpired
+		default:
+			newStatus = models.PaymentStatusPending
+		}
+	} else if req.Status != nil {
+		newStatus = models.PaymentStatus(*req.Status)
+	} else {
+		newStatus = models.PaymentStatusPaid
 	}
 
 	// Idempotency: If order is already paid, do not re-process or duplicate tickets
@@ -377,7 +432,6 @@ func (s *orderService) HandlePaymentWebhook(headerToken string, req dto.PaymentW
 		return errors.New("cannot process payment: order has already expired")
 	}
 
-	newStatus := models.PaymentStatus(req.Status)
 	now := time.Now()
 
 	err = s.orderRepo.GetDB().Transaction(func(tx *gorm.DB) error {
@@ -387,10 +441,14 @@ func (s *orderService) HandlePaymentWebhook(headerToken string, req dto.PaymentW
 		}
 
 		if order.PaymentDetails != nil {
-			if req.PaymentMethod != nil {
+			if req.PaymentType != nil {
+				order.PaymentDetails.PaymentMethod = req.PaymentType
+			} else if req.PaymentMethod != nil {
 				order.PaymentDetails.PaymentMethod = req.PaymentMethod
 			}
-			if req.ReferenceID != nil {
+			if req.TransactionID != nil {
+				order.PaymentDetails.GatewayReference = req.TransactionID
+			} else if req.ReferenceID != nil {
 				order.PaymentDetails.GatewayReference = req.ReferenceID
 			}
 			if newStatus == models.PaymentStatusPaid {

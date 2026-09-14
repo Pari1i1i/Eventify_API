@@ -2402,7 +2402,13 @@ const docTemplate = `{
                 "payment_method": {
                     "type": "string"
                 },
-                "qr_url": {
+                "qr_code_url": {
+                    "type": "string"
+                },
+                "redirect_url": {
+                    "type": "string"
+                },
+                "snap_token": {
                     "type": "string"
                 },
                 "va_number": {
@@ -2412,49 +2418,44 @@ const docTemplate = `{
         },
         "dto.PaymentWebhookRequest": {
             "type": "object",
-            "required": [
-                "order_code",
-                "status"
-            ],
             "properties": {
                 "callback_token": {
                     "description": "Xendit compatibility fields",
-                    "type": "string",
-                    "example": "token_abc123"
+                    "type": "string"
                 },
                 "gross_amount": {
-                    "type": "string",
-                    "example": "150000.00"
+                    "type": "string"
                 },
                 "order_code": {
-                    "type": "string",
-                    "example": "ORD-20260909-ABCD"
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
                 },
                 "payment_method": {
-                    "type": "string",
-                    "example": "qris"
+                    "type": "string"
+                },
+                "payment_type": {
+                    "type": "string"
                 },
                 "reference_id": {
-                    "type": "string",
-                    "example": "TRX-GATEWAY-123456"
+                    "type": "string"
                 },
                 "signature_key": {
-                    "type": "string",
-                    "example": "e763b0...512hash"
+                    "type": "string"
                 },
                 "status": {
-                    "type": "string",
-                    "enum": [
-                        "paid",
-                        "failed",
-                        "cancelled"
-                    ],
-                    "example": "paid"
+                    "type": "string"
                 },
                 "status_code": {
-                    "description": "Midtrans compatibility fields",
-                    "type": "string",
-                    "example": "200"
+                    "description": "Midtrans notification fields",
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "transaction_status": {
+                    "type": "string"
                 }
             }
         },

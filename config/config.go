@@ -22,6 +22,7 @@ type Config struct {
 	JWTExpirationHours int
 	UploadDir          string
 	MidtransServerKey  string
+	MidtransClientKey  string
 	XenditWebhookToken string
 }
 
@@ -51,7 +52,8 @@ func LoadConfig() *Config {
 		JWTSecret:          getEnv("JWT_SECRET", "eventify_default_secret_key"),
 		JWTExpirationHours: jwtExpHours,
 		UploadDir:          getEnv("UPLOAD_DIR", "./uploads"),
-		MidtransServerKey:  getEnv("MIDTRANS_SERVER_KEY", "SB-Mid-server-SampleKey123"),
+		MidtransServerKey:  getEnv("MIDTRANS_SERVER_KEY", ""),
+		MidtransClientKey:  getEnv("MIDTRANS_CLIENT_KEY", ""),
 		XenditWebhookToken: getEnv("XENDIT_WEBHOOK_TOKEN", "sample_xendit_webhook_token_123"),
 	}
 

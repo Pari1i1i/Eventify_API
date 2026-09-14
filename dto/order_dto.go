@@ -39,24 +39,30 @@ type OrderItemResponse struct {
 }
 
 type PaymentDetailResponse struct {
-	PaymentMethod    *string    `json:"payment_method"`
-	GatewayReference *string    `json:"gateway_reference"`
-	VaNumber         *string    `json:"va_number"`
-	QrURL            *string    `json:"qr_url"`
-	PaidAt           *time.Time `json:"paid_at"`
+	PaymentMethod    *string    `json:"payment_method,omitempty"`
+	GatewayReference *string    `json:"gateway_reference,omitempty"`
+	VaNumber         *string    `json:"va_number,omitempty"`
+	RedirectURL      *string    `json:"redirect_url,omitempty"`
+	QrURL            *string    `json:"qr_code_url,omitempty"`
+	SnapToken        *string    `json:"snap_token,omitempty"`
+	PaidAt           *time.Time `json:"paid_at,omitempty"`
 }
 
 type PaymentWebhookRequest struct {
-	OrderCode     string  `json:"order_code" binding:"required" example:"ORD-20260909-ABCD"`
-	Status        string  `json:"status" binding:"required,oneof=paid failed cancelled" example:"paid"`
-	PaymentMethod *string `json:"payment_method" example:"qris"`
-	ReferenceID   *string `json:"reference_id" example:"TRX-GATEWAY-123456"`
-	// Midtrans compatibility fields
-	StatusCode   *string `json:"status_code" example:"200"`
-	GrossAmount  *string `json:"gross_amount" example:"150000.00"`
-	SignatureKey *string `json:"signature_key" example:"e763b0...512hash"`
+	OrderCode         string  `json:"order_code"`
+	OrderID           *string `json:"order_id"`
+	Status            *string `json:"status"`
+	TransactionStatus *string `json:"transaction_status"`
+	TransactionID     *string `json:"transaction_id"`
+	PaymentType       *string `json:"payment_type"`
+	PaymentMethod     *string `json:"payment_method"`
+	ReferenceID       *string `json:"reference_id"`
+	// Midtrans notification fields
+	StatusCode   *string `json:"status_code"`
+	GrossAmount  *string `json:"gross_amount"`
+	SignatureKey *string `json:"signature_key"`
 	// Xendit compatibility fields
-	CallbackToken *string `json:"callback_token" example:"token_abc123"`
+	CallbackToken *string `json:"callback_token"`
 }
 
 type TicketResponse struct {
