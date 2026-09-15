@@ -197,10 +197,18 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 				break
 			}
 		}
-		if qrURL != "" {
+		// Prefer raw QR string (EMVCo) as simulation key because simulator parses raw string directly!
+		simKey := ""
+		if qrisResp.QRString != "" {
+			simKey = qrisResp.QRString
+		} else if qrURL != "" {
+			simKey = qrURL
+		}
+
+		if simKey != "" {
+			paymentDetails.QrURL = &simKey
+		} else if qrURL != "" {
 			paymentDetails.QrURL = &qrURL
-		} else if qrisResp.QRString != "" {
-			paymentDetails.QrURL = &qrisResp.QRString
 		}
 
 		// =========================================================================
@@ -208,19 +216,19 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 		// =========================================================================
 		log.Println("=========================================================================")
 		log.Println("🔥 [MIDTRANS QRIS CREATED] 🔥")
-		log.Printf("Order Code    : %s\n", orderCode)
-		log.Printf("Gross Amount  : Rp %.2f\n", totalAmount)
-		log.Printf("Transaction ID: %s\n", qrisResp.TransactionID)
-		if qrisResp.QRString != "" {
-			log.Printf("QR String (Raw): %s\n", qrisResp.QRString)
-		}
+		log.Printf("Order Code        : %s\n", orderCode)
+		log.Printf("Gross Amount      : Rp %.2f\n", totalAmount)
+		log.Printf("Transaction ID    : %s\n", qrisResp.TransactionID)
 		if qrURL != "" {
-			log.Printf("QR Code Image : %s\n", qrURL)
+			log.Printf("QR Code Image URL : %s\n", qrURL)
+		}
+		if qrisResp.QRString != "" {
+			log.Printf("QR String (EMVCo) : %s\n", qrisResp.QRString)
 		}
 		log.Println("-------------------------------------------------------------------------")
-		log.Printf("👉 SIMULATOR KEY UNTUK BAYAR : %s\n", orderCode)
-		log.Println("Buka Midtrans Simulator: https://simulator.sandbox.midtrans.com/qris/index")
-		log.Printf("Paste Order ID / QR String di simulator lalu klik 'Pay'!\n")
+		log.Printf("👉 SIMULATOR KEY (PASTE KE SIMULATOR): \n%s\n", simKey)
+		log.Println("Buka Midtrans Simulator : https://simulator.sandbox.midtrans.com/qris/index")
+		log.Println("Paste QR String / URL di atas ke form simulator lalu klik 'Pay'!")
 		log.Println("=========================================================================")
 	} else {
 		paymentDetails.PaidAt = &now
@@ -321,13 +329,37 @@ func (s *orderService) GetOrderByCode(userID uint64, userRole uint8, orderCode s
 
 	var paymentDetailResp *dto.PaymentDetailResponse
 	if order.PaymentDetails != nil {
-		simKey := order.OrderCode
+		// In Midtrans QRIS, simulation key is the raw QR String (EMVCo) or QR Image URL
+		var simKey *string
+		if order.PaymentDetails.QrURL != nil && *order.PaymentDetails.QrURL != "" {
+			simKey = order.PaymentDetails.QrURL
+		}
+
+		qrCodeURL := ""
+		// If QrURL starts with http, it is already an image URL
+		// If it's raw EMVCo string, generate Midtrans QR image url or use gateway reference
+		if order.PaymentDetails.QrURL != nil {
+			val := *order.PaymentDetails.QrURL
+			if strings.HasPrefix(val, "http") {
+				qrCodeURL = val
+			} else if order.PaymentDetails.GatewayReference != nil && *order.PaymentDetails.GatewayReference != "" {
+				qrCodeURL = fmt.Sprintf("https://api.sandbox.midtrans.com/v2/qris/%s/qr-code", *order.PaymentDetails.GatewayReference)
+			}
+		}
+
+		var qrURLPtr *string
+		if qrCodeURL != "" {
+			qrURLPtr = &qrCodeURL
+		} else {
+			qrURLPtr = order.PaymentDetails.QrURL
+		}
+
 		paymentDetailResp = &dto.PaymentDetailResponse{
 			PaymentMethod:    order.PaymentDetails.PaymentMethod,
 			GatewayReference: order.PaymentDetails.GatewayReference,
 			VaNumber:         order.PaymentDetails.VaNumber,
-			QrURL:            order.PaymentDetails.QrURL,
-			SimulationKey:    &simKey,
+			QrURL:            qrURLPtr,
+			SimulationKey:    simKey,
 			PaidAt:           order.PaymentDetails.PaidAt,
 		}
 	}
