@@ -2451,10 +2451,7 @@ const docTemplate = `{
                 "qr_code_url": {
                     "type": "string"
                 },
-                "redirect_url": {
-                    "type": "string"
-                },
-                "snap_token": {
+                "simulation_key": {
                     "type": "string"
                 },
                 "va_number": {

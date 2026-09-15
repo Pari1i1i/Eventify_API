@@ -8,98 +8,96 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
-type MidtransSnapRequest struct {
-	TransactionDetails TransactionDetails `json:"transaction_details"`
-	CustomerDetails    *CustomerDetails   `json:"customer_details,omitempty"`
-	Expiry             *ExpiryDetails     `json:"expiry,omitempty"`
+type MidtransQRISResponse struct {
+	StatusCode        string            `json:"status_code"`
+	StatusMessage     string            `json:"status_message"`
+	TransactionID     string            `json:"transaction_id"`
+	OrderID           string            `json:"order_id"`
+	GrossAmount       string            `json:"gross_amount"`
+	PaymentType       string            `json:"payment_type"`
+	TransactionTime   string            `json:"transaction_time"`
+	TransactionStatus string            `json:"transaction_status"`
+	Actions           []MidtransAction  `json:"actions"`
+	QRString          string            `json:"qr_string"`
 }
 
-type TransactionDetails struct {
+type MidtransAction struct {
+	Name   string `json:"name"`
+	Method string `json:"method"`
+	URL    string `json:"url"`
+}
+
+type MidtransChargeRequest struct {
+	PaymentType        string                 `json:"payment_type"`
+	TransactionDetails MidtransTxDetail       `json:"transaction_details"`
+	ItemDetails        []MidtransItemDetail   `json:"item_details,omitempty"`
+	CustomerDetails    *MidtransCustomerDetail `json:"customer_details,omitempty"`
+}
+
+type MidtransTxDetail struct {
 	OrderID     string `json:"order_id"`
 	GrossAmount int64  `json:"gross_amount"`
 }
 
-type CustomerDetails struct {
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name,omitempty"`
-	Email     string `json:"email,omitempty"`
+type MidtransItemDetail struct {
+	ID       string `json:"id"`
+	Price    int64  `json:"price"`
+	Quantity int32  `json:"quantity"`
+	Name     string `json:"name"`
+}
+
+type MidtransCustomerDetail struct {
+	FirstName string `json:"first_name"`
+	Email     string `json:"email"`
 	Phone     string `json:"phone,omitempty"`
 }
 
-type ExpiryDetails struct {
-	StartTime string `json:"start_time,omitempty"`
-	Duration  int    `json:"duration"`
-	Unit      string `json:"unit"`
-}
+// ChargeMidtransQRIS sends request to Midtrans Core API Sandbox/Production to get genuine QRIS
+func ChargeMidtransQRIS(serverKey string, isProduction bool, req MidtransChargeRequest) (*MidtransQRISResponse, error) {
+	req.PaymentType = "qris"
 
-type MidtransSnapResponse struct {
-	Token         string   `json:"token"`
-	RedirectURL   string   `json:"redirect_url"`
-	ErrorMessages []string `json:"error_messages,omitempty"`
-}
-
-func CreateMidtransSnapTransaction(serverKey string, orderCode string, amount float64, customerName, customerEmail string) (*MidtransSnapResponse, error) {
-	if serverKey == "" {
-		return nil, errors.New("midtrans server key is not configured")
+	baseURL := "https://api.sandbox.midtrans.com/v2/charge"
+	if isProduction {
+		baseURL = "https://api.midtrans.com/v2/charge"
 	}
 
-	snapURL := "https://app.sandbox.midtrans.com/snap/v1/transactions"
-
-	reqPayload := MidtransSnapRequest{
-		TransactionDetails: TransactionDetails{
-			OrderID:     orderCode,
-			GrossAmount: int64(amount),
-		},
-		CustomerDetails: &CustomerDetails{
-			FirstName: customerName,
-			Email:     customerEmail,
-		},
-		Expiry: &ExpiryDetails{
-			Duration: 2,
-			Unit:     "hours",
-		},
-	}
-
-	jsonBytes, err := json.Marshal(reqPayload)
+	reqBodyBytes, err := json.Marshal(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal snap request: %w", err)
+		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", snapURL, bytes.NewBuffer(jsonBytes))
+	httpReq, err := http.NewRequest("POST", baseURL, bytes.NewBuffer(reqBodyBytes))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create http request: %w", err)
+		return nil, err
 	}
 
-	authStr := serverKey + ":"
-	encodedAuth := base64.StdEncoding.EncodeToString([]byte(authStr))
+	authStr := base64.StdEncoding.EncodeToString([]byte(strings.TrimSpace(serverKey) + ":"))
+	httpReq.Header.Set("Authorization", "Basic "+authStr)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Basic "+encodedAuth)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Midtrans Snap API: %w", err)
+		return nil, fmt.Errorf("failed calling midtrans charge API: %w", err)
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Midtrans response: %w", err)
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var midtransResp MidtransQRISResponse
+	if err := json.Unmarshal(bodyBytes, &midtransResp); err != nil {
+		return nil, fmt.Errorf("error parsing midtrans response: %w (raw: %s)", err, string(bodyBytes))
 	}
 
+	// Midtrans returns 201 for successfully created charge
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("midtrans API error (status %d): %s", resp.StatusCode, string(bodyBytes))
+		return nil, errors.New(midtransResp.StatusMessage)
 	}
 
-	var snapResp MidtransSnapResponse
-	if err := json.Unmarshal(bodyBytes, &snapResp); err != nil {
-		return nil, fmt.Errorf("failed to parse Midtrans response: %w", err)
-	}
-
-	return &snapResp, nil
+	return &midtransResp, nil
 }

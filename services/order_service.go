@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -127,7 +128,7 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 		ExpiresAt:     &expiresAt,
 	}
 
-	paymentMethod := "midtrans"
+	paymentMethod := "qris"
 	if req.PaymentMethod != nil && *req.PaymentMethod != "" {
 		paymentMethod = *req.PaymentMethod
 	}
@@ -140,29 +141,87 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 	}
 
 	if totalAmount > 0 {
-		// Fetch customer details for Midtrans Snap Payload
 		user, _ := s.userRepo.FindByID(userID)
-		userName := ""
-		userEmail := ""
+		userName := "Customer"
+		userEmail := "customer@eventify.com"
+		userPhone := ""
 		if user != nil {
 			userName = user.Name
 			userEmail = user.Email
+			if user.Phone != nil {
+				userPhone = *user.Phone
+			}
 		}
 
-		snapResp, err := utils.CreateMidtransSnapTransaction(
-			s.cfg.MidtransServerKey,
-			orderCode,
-			totalAmount,
-			userName,
-			userEmail,
-		)
+		// Prepare item details for Midtrans
+		var itemDetails []utils.MidtransItemDetail
+		for _, it := range orderItems {
+			tier, _ := s.eventRepo.FindTierByID(it.TicketTierID)
+			tierName := "Ticket"
+			if tier != nil {
+				tierName = tier.Name
+			}
+			itemDetails = append(itemDetails, utils.MidtransItemDetail{
+				ID:       fmt.Sprintf("TIER-%d", it.TicketTierID),
+				Price:    int64(it.Price),
+				Quantity: int32(it.Quantity),
+				Name:     tierName,
+			})
+		}
+
+		isProd := s.cfg.AppEnv == "production"
+		chargeReq := utils.MidtransChargeRequest{
+			TransactionDetails: utils.MidtransTxDetail{
+				OrderID:     orderCode,
+				GrossAmount: int64(totalAmount),
+			},
+			ItemDetails: itemDetails,
+			CustomerDetails: &utils.MidtransCustomerDetail{
+				FirstName: userName,
+				Email:     userEmail,
+				Phone:     userPhone,
+			},
+		}
+
+		qrisResp, err := utils.ChargeMidtransQRIS(s.cfg.MidtransServerKey, isProd, chargeReq)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate Midtrans Snap transaction: %w", err)
+			return nil, fmt.Errorf("failed creating Midtrans QRIS payment: %w", err)
 		}
 
-		paymentDetails.GatewayReference = &snapResp.Token
-		paymentDetails.RedirectURL = &snapResp.RedirectURL
-		paymentDetails.QrURL = &snapResp.RedirectURL
+		paymentDetails.GatewayReference = &qrisResp.TransactionID
+
+		var qrURL string
+		for _, action := range qrisResp.Actions {
+			if action.Name == "generate-qr-code" {
+				qrURL = action.URL
+				break
+			}
+		}
+		if qrURL != "" {
+			paymentDetails.QrURL = &qrURL
+		} else if qrisResp.QRString != "" {
+			paymentDetails.QrURL = &qrisResp.QRString
+		}
+
+		// =========================================================================
+		// CONSOLE LOG MIDTRANS QRIS SIMULATOR KEY FOR DEVELOPMENT
+		// =========================================================================
+		log.Println("=========================================================================")
+		log.Println("🔥 [MIDTRANS QRIS CREATED] 🔥")
+		log.Printf("Order Code    : %s\n", orderCode)
+		log.Printf("Gross Amount  : Rp %.2f\n", totalAmount)
+		log.Printf("Transaction ID: %s\n", qrisResp.TransactionID)
+		if qrisResp.QRString != "" {
+			log.Printf("QR String (Raw): %s\n", qrisResp.QRString)
+		}
+		if qrURL != "" {
+			log.Printf("QR Code Image : %s\n", qrURL)
+		}
+		log.Println("-------------------------------------------------------------------------")
+		log.Printf("👉 SIMULATOR KEY UNTUK BAYAR : %s\n", orderCode)
+		log.Println("Buka Midtrans Simulator: https://simulator.sandbox.midtrans.com/qris/index")
+		log.Printf("Paste Order ID / QR String di simulator lalu klik 'Pay'!\n")
+		log.Println("=========================================================================")
 	} else {
 		paymentDetails.PaidAt = &now
 	}
@@ -171,7 +230,10 @@ func (s *orderService) CreateOrder(userID uint64, req dto.CreateOrderRequest) (*
 		return nil, err
 	}
 
-	// If order is free, immediately issue tickets!
+	// TICKET GENERATION:
+	// If payment is free, generate tickets immediately.
+	// For paid orders (QRIS), tickets are NOT created here!
+	// Tickets will ONLY be generated when Midtrans sends payment webhook (status 'settlement' / 'capture').
 	if paymentStatus == models.PaymentStatusFree {
 		if err := s.generateTicketsForOrder(order.ID); err != nil {
 			return nil, err
@@ -259,13 +321,13 @@ func (s *orderService) GetOrderByCode(userID uint64, userRole uint8, orderCode s
 
 	var paymentDetailResp *dto.PaymentDetailResponse
 	if order.PaymentDetails != nil {
+		simKey := order.OrderCode
 		paymentDetailResp = &dto.PaymentDetailResponse{
 			PaymentMethod:    order.PaymentDetails.PaymentMethod,
 			GatewayReference: order.PaymentDetails.GatewayReference,
 			VaNumber:         order.PaymentDetails.VaNumber,
-			RedirectURL:      order.PaymentDetails.RedirectURL,
 			QrURL:            order.PaymentDetails.QrURL,
-			SnapToken:        order.PaymentDetails.GatewayReference,
+			SimulationKey:    &simKey,
 			PaidAt:           order.PaymentDetails.PaidAt,
 		}
 	}

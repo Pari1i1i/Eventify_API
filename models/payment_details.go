@@ -8,7 +8,6 @@ type PaymentDetails struct {
 	PaymentMethod    *string    `gorm:"type:varchar(50)" json:"payment_method"`
 	GatewayReference *string    `gorm:"type:varchar(100)" json:"gateway_reference"`
 	VaNumber         *string    `gorm:"type:varchar(50)" json:"va_number"`
-	RedirectURL      *string    `gorm:"type:text" json:"redirect_url,omitempty"`
 	QrURL            *string    `gorm:"type:text" json:"qr_url,omitempty"`
 	PaidAt           *time.Time `gorm:"type:datetime" json:"paid_at"`
 	CreatedAt        time.Time  `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`

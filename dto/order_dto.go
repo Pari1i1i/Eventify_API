@@ -42,9 +42,8 @@ type PaymentDetailResponse struct {
 	PaymentMethod    *string    `json:"payment_method,omitempty"`
 	GatewayReference *string    `json:"gateway_reference,omitempty"`
 	VaNumber         *string    `json:"va_number,omitempty"`
-	RedirectURL      *string    `json:"redirect_url,omitempty"`
 	QrURL            *string    `json:"qr_code_url,omitempty"`
-	SnapToken        *string    `json:"snap_token,omitempty"`
+	SimulationKey    *string    `json:"simulation_key,omitempty"`
 	PaidAt           *time.Time `json:"paid_at,omitempty"`
 }
 
