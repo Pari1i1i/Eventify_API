@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strings"
 	"time"
 
 	"eventifyApi/dto"
@@ -92,9 +93,13 @@ func (r *eventRepository) FindAll(filter dto.EventFilterQuery, onlyPublished boo
 		query = query.Where("status = ?", filter.Status)
 	}
 
+	if filter.Category != "" && strings.ToLower(strings.TrimSpace(filter.Category)) != "semua" {
+		query = query.Where("category = ?", models.ParseEventCategory(filter.Category))
+	}
+
 	if filter.Search != "" {
 		searchPattern := "%" + filter.Search + "%"
-		query = query.Where("name LIKE ? OR location LIKE ? OR description LIKE ?", searchPattern, searchPattern, searchPattern)
+		query = query.Where("name LIKE ? OR location LIKE ? OR description LIKE ? OR category LIKE ?", searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 
 	if filter.StartDate != "" {

@@ -68,9 +68,15 @@ func (s *eventService) CreateEvent(userID uint64, req dto.CreateEventRequest) (*
 		status = models.EventStatus(*req.Status)
 	}
 
+	category := models.EventCategoryUmum
+	if req.Category != "" {
+		category = models.ParseEventCategory(req.Category)
+	}
+
 	event := &models.Event{
 		CreatedBy:       &userID,
 		Name:            req.Name,
+		Category:        category,
 		Slug:            slug,
 		Description:     req.Description,
 		TermsConditions: req.TermsConditions,
@@ -222,6 +228,9 @@ func (s *eventService) UpdateEvent(userID uint64, userRole uint8, eventID uint64
 	}
 
 	event.Name = req.Name
+	if req.Category != "" {
+		event.Category = models.ParseEventCategory(req.Category)
+	}
 	event.Description = req.Description
 	event.TermsConditions = req.TermsConditions
 	event.Location = req.Location
@@ -444,11 +453,17 @@ func (s *eventService) mapEventToDetailResponse(event *models.Event) (*dto.Event
 		})
 	}
 
+	category := string(event.Category)
+	if category == "" {
+		category = string(models.EventCategoryUmum)
+	}
+
 	return &dto.EventDetailResponse{
 		ID:              event.ID,
 		CreatedBy:       event.CreatedBy,
 		CreatorName:     creatorName,
 		Name:            event.Name,
+		Category:        category,
 		Slug:            event.Slug,
 		Description:     event.Description,
 		TermsConditions: event.TermsConditions,

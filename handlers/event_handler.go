@@ -33,6 +33,7 @@ func NewEventHandler(eventService services.EventService, cfg *config.Config) *Ev
 // @Tags Public - Events
 // @Produce json
 // @Param search query string false "Search name, location, or description"
+// @Param category query string false "Filter category (Olahraga, Teknologi, Konser, Workshop, Umum)"
 // @Param start_date query string false "Filter start date (YYYY-MM-DD)"
 // @Param end_date query string false "Filter end date (YYYY-MM-DD)"
 // @Param page query int false "Page number" default(1)

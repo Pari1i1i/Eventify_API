@@ -4,6 +4,7 @@ import "time"
 
 type CreateEventRequest struct {
 	Name            string                  `json:"name" binding:"required,max=200" example:"Tech Conference 2026"`
+	Category        string                  `json:"category" binding:"omitempty" example:"Teknologi"`
 	Description     string                  `json:"description" binding:"required" example:"Biggest tech summit in Indonesia"`
 	TermsConditions *string                 `json:"terms_conditions" example:"Tickets are non-refundable."`
 	Location        string                  `json:"location" binding:"required,max=255" example:"Jakarta Convention Center"`
@@ -15,6 +16,7 @@ type CreateEventRequest struct {
 
 type UpdateEventRequest struct {
 	Name            string    `json:"name" binding:"required,max=200" example:"Tech Conference 2026 Updated"`
+	Category        string    `json:"category" binding:"omitempty" example:"Teknologi"`
 	Description     string    `json:"description" binding:"required" example:"Updated description"`
 	TermsConditions *string   `json:"terms_conditions" example:"Updated terms"`
 	Location        string    `json:"location" binding:"required,max=255" example:"Bali Nusa Dua"`
@@ -60,6 +62,7 @@ type UpdateEventStatusRequest struct {
 
 type EventFilterQuery struct {
 	Search    string `form:"search"`
+	Category  string `form:"category"`
 	Status    string `form:"status"`
 	StartDate string `form:"start_date"`
 	EndDate   string `form:"end_date"`
@@ -72,6 +75,7 @@ type EventDetailResponse struct {
 	CreatedBy       *uint64              `json:"created_by"`
 	CreatorName     string               `json:"creator_name,omitempty"`
 	Name            string               `json:"name"`
+	Category        string               `json:"category"`
 	Slug            string               `json:"slug"`
 	Description     string               `json:"description"`
 	TermsConditions *string              `json:"terms_conditions"`
