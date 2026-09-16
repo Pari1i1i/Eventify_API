@@ -49,8 +49,9 @@ func main() {
 		log.Fatalf("Fatal Database Error: %v\nPlease make sure MySQL is running and the database '%s' exists.", err, cfg.DBName)
 	}
 
-	// Auto-migrate additional runtime tables (e.g. password reset tokens)
+	// Auto-migrate additional runtime tables (e.g. password reset tokens, users)
 	_ = db.AutoMigrate(&models.PasswordResetToken{})
+	_ = db.AutoMigrate(&models.User{})
 
 	// Activate all existing users (set status to active)
 	db.Model(&models.User{}).Where("status != ? OR status IS NULL", "active").Update("status", "active")
