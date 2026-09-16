@@ -22,6 +22,7 @@ type AuthService interface {
 	ChangePassword(userID uint64, req dto.ChangePasswordRequest) error
 	GetAllUsers(page, limit int) (*utils.PaginatedData, error)
 	UpdateUserRole(userID uint64, roleID uint8) error
+	UpdateUserStatus(userID uint64, status string) error
 	ForgotPassword(req dto.ForgotPasswordRequest) (string, error)
 	ResetPassword(req dto.ResetPasswordRequest) error
 }
@@ -52,6 +53,7 @@ func (s *authService) Register(req dto.RegisterRequest) (*dto.AuthResponse, erro
 		Email:    req.Email,
 		Phone:    req.Phone,
 		Password: hashedPassword,
+		Status:   "active",
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -90,6 +92,11 @@ func (s *authService) Login(req dto.LoginRequest) (*dto.AuthResponse, error) {
 		return nil, errors.New("invalid email or password")
 	}
 
+	// Check if user is active
+	if user.Status != "active" {
+		return nil, errors.New("account is inactive")
+	}
+
 	token, err := utils.GenerateToken(user.ID, user.Email, user.RoleID, s.cfg.JWTSecret, s.cfg.JWTExpirationHours)
 	if err != nil {
 		return nil, err
@@ -109,6 +116,7 @@ func (s *authService) Login(req dto.LoginRequest) (*dto.AuthResponse, error) {
 			Name:      user.Name,
 			Email:     user.Email,
 			Phone:     user.Phone,
+			Status:    user.Status,
 			CreatedAt: user.CreatedAt,
 		},
 	}, nil
@@ -132,6 +140,7 @@ func (s *authService) GetProfile(userID uint64) (*dto.UserProfile, error) {
 		Name:      user.Name,
 		Email:     user.Email,
 		Phone:     user.Phone,
+		Status:    user.Status,
 		CreatedAt: user.CreatedAt,
 	}, nil
 }
@@ -197,6 +206,7 @@ func (s *authService) GetAllUsers(page, limit int) (*utils.PaginatedData, error)
 			Name:      u.Name,
 			Email:     u.Email,
 			Phone:     u.Phone,
+			Status:    u.Status,
 			CreatedAt: u.CreatedAt,
 		})
 	}
@@ -218,6 +228,18 @@ func (s *authService) UpdateUserRole(userID uint64, roleID uint8) error {
 		return err
 	}
 	return s.userRepo.UpdateRole(userID, roleID)
+}
+
+func (s *authService) UpdateUserStatus(userID uint64, status string) error {
+	// Validate status
+	if status != "active" && status != "inactive" {
+		return errors.New("status must be either 'active' or 'inactive'")
+	}
+	_, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	return s.userRepo.UpdateStatus(userID, status)
 }
 
 func (s *authService) ForgotPassword(req dto.ForgotPasswordRequest) (string, error) {

@@ -26,6 +26,7 @@ type UserProfile struct {
 	Name      string    `json:"name" example:"Fachri Ramadhan"`
 	Email     string    `json:"email" example:"fachri@example.com"`
 	Phone     *string   `json:"phone" example:"081234567890"`
+	Status    string    `json:"status" example:"active"` // active or inactive
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -50,4 +51,9 @@ type ForgotPasswordRequest struct {
 type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required" example:"a1b2c3d4e5f6..."`
 	NewPassword string `json:"new_password" binding:"required,min=6" example:"new_secret123"`
+}
+
+// UpdateUserStatusRequest is used to update a user's status (active/inactive)
+type UpdateUserStatusRequest struct {
+	Status string `json:"status" binding:"required,oneof=active inactive" example:"inactive"`
 }

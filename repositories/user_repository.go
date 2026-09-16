@@ -13,6 +13,7 @@ type UserRepository interface {
 	Update(user *models.User) error
 	FindAll(page, limit int) ([]models.User, int64, error)
 	UpdateRole(userID uint64, roleID uint8) error
+	UpdateStatus(userID uint64, status string) error
 
 	// Password reset tokens
 	CreatePasswordResetToken(reset *models.PasswordResetToken) error
@@ -69,6 +70,10 @@ func (r *userRepository) FindAll(page, limit int) ([]models.User, int64, error) 
 
 func (r *userRepository) UpdateRole(userID uint64, roleID uint8) error {
 	return r.db.Model(&models.User{}).Where("id = ?", userID).Update("role_id", roleID).Error
+}
+
+func (r *userRepository) UpdateStatus(userID uint64, status string) error {
+	return r.db.Model(&models.User{}).Where("id = ?", userID).Update("status", status).Error
 }
 
 func (r *userRepository) CreatePasswordResetToken(reset *models.PasswordResetToken) error {

@@ -10,6 +10,7 @@ type User struct {
 	Phone         *string   `gorm:"type:varchar(25)" json:"phone"`
 	Password      string    `gorm:"type:varchar(255);not null" json:"-"`
 	RememberToken *string   `gorm:"type:varchar(100)" json:"-"`
+	Status        string    `gorm:"type:varchar(10);not null;default:'active'" json:"status"`
 	CreatedAt     time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt     time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP" json:"updated_at"`
 

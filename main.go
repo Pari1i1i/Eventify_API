@@ -160,6 +160,7 @@ func main() {
 			admin.GET("/dashboard", orderHandler.GetDashboardStats)
 			admin.GET("/users", authHandler.GetAllUsers)
 			admin.PUT("/users/:id/role", authHandler.UpdateUserRole)
+			admin.PUT("/users/:id/status", authHandler.UpdateUserStatus)
 			admin.GET("/orders", orderHandler.GetAllOrders)
 			admin.GET("/events", eventHandler.AdminGetAllEvents)
 			admin.PUT("/events/:id/status", eventHandler.AdminUpdateEventStatus)

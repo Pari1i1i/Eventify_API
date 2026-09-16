@@ -214,6 +214,41 @@ func (h *AuthHandler) UpdateUserRole(c *gin.Context) {
 	utils.JSONSuccess(c, http.StatusOK, "User role updated successfully", nil)
 }
 
+// UpdateUserStatus godoc
+// @Summary Update user status (Admin only)
+// @Description Update status of a specific user (active or inactive)
+// @Tags Admin - Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body dto.UpdateUserStatusRequest true "Status update payload"
+// @Success 200 {object} utils.APIResponse "User status updated successfully"
+// @Failure 400 {object} utils.APIResponse "Bad request"
+// @Failure 401 {object} utils.APIResponse "Unauthorized"
+// @Failure 403 {object} utils.APIResponse "Forbidden"
+// @Router /api/v1/admin/users/{id}/status [put]
+func (h *AuthHandler) UpdateUserStatus(c *gin.Context) {
+	targetUserID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		utils.JSONError(c, http.StatusBadRequest, "Invalid user ID", nil)
+		return
+	}
+
+	var req dto.UpdateUserStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.JSONError(c, http.StatusBadRequest, "Invalid request body", err.Error())
+		return
+	}
+
+	if err := h.authService.UpdateUserStatus(targetUserID, req.Status); err != nil {
+		utils.JSONError(c, http.StatusInternalServerError, err.Error(), nil)
+		return
+	}
+
+	utils.JSONSuccess(c, http.StatusOK, "User status updated successfully", nil)
+}
+
 // ForgotPassword godoc
 // @Summary Request password reset token
 // @Description Generates a secure reset token sent to email (simulated return for API development)
