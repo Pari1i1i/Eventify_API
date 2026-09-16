@@ -57,7 +57,7 @@ type UpdateTicketTierRequest struct {
 }
 
 type UpdateEventStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=draft published completed cancelled" example:"published"`
+	Status string `json:"status" binding:"required,oneof=draft published completed cancelled ended suspended inactive" example:"published"`
 }
 
 type EventFilterQuery struct {

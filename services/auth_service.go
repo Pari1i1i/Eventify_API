@@ -103,6 +103,9 @@ func (s *authService) Login(req dto.LoginRequest) (*dto.AuthResponse, error) {
 
 	// Check if user is active
 	if user.Status != "active" {
+		if user.Status == "suspended" {
+			return nil, errors.New("akun Anda telah disuspend oleh administrator")
+		}
 		return nil, errors.New("account is inactive")
 	}
 
@@ -248,8 +251,8 @@ func (s *authService) UpdateUserRole(userID uint64, roleID uint8) error {
 
 func (s *authService) UpdateUserStatus(userID uint64, status string) error {
 	// Validate status
-	if status != "active" && status != "inactive" {
-		return errors.New("status must be either 'active' or 'inactive'")
+	if status != "active" && status != "inactive" && status != "suspended" {
+		return errors.New("status must be 'active', 'inactive', or 'suspended'")
 	}
 	_, err := s.userRepo.FindByID(userID)
 	if err != nil {

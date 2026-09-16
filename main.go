@@ -168,6 +168,9 @@ func main() {
 			admin.GET("/orders", orderHandler.GetAllOrders)
 			admin.GET("/events", eventHandler.AdminGetAllEvents)
 			admin.PUT("/events/:id/status", eventHandler.AdminUpdateEventStatus)
+			admin.DELETE("/events/:id", eventHandler.DeleteEvent)
+			admin.POST("/check-in", orderHandler.CheckInTicket)
+			admin.POST("/participants/:id/check-in", orderHandler.CheckInTicket)
 		}
 	}
 

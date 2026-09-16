@@ -55,7 +55,7 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=6" example:"new_secret123"`
 }
 
-// UpdateUserStatusRequest is used to update a user's status (active/inactive)
+// UpdateUserStatusRequest is used to update a user's status (active/inactive/suspended)
 type UpdateUserStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=active inactive" example:"inactive"`
+	Status string `json:"status" binding:"required,oneof=active inactive suspended" example:"suspended"`
 }

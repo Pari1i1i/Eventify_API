@@ -86,6 +86,9 @@ func (r *eventRepository) FindAll(filter dto.EventFilterQuery, onlyPublished boo
 	var total int64
 
 	query := r.db.Model(&models.Event{})
+	if !onlyPublished {
+		query = r.db.Unscoped().Model(&models.Event{})
+	}
 
 	if onlyPublished {
 		query = query.Where("status = ?", models.EventStatusPublished)

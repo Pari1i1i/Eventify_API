@@ -369,12 +369,36 @@ func (s *orderService) GetOrderByCode(userID uint64, userRole uint8, orderCode s
 		eventName = order.Event.Name
 	}
 
+	custName := ""
+	custEmail := ""
+	custPhone := ""
+	if order.User != nil {
+		custName = order.User.Name
+		custEmail = order.User.Email
+		if order.User.Phone != nil {
+			custPhone = *order.User.Phone
+		}
+	} else {
+		if u, err := s.userRepo.FindByID(order.UserID); err == nil && u != nil {
+			custName = u.Name
+			custEmail = u.Email
+			if u.Phone != nil {
+				custPhone = *u.Phone
+			}
+		}
+	}
+
 	return &dto.OrderResponse{
 		ID:             order.ID,
 		OrderCode:      order.OrderCode,
 		UserID:         order.UserID,
 		EventID:        order.EventID,
 		EventName:      eventName,
+		CustomerName:   custName,
+		CustomerEmail:  custEmail,
+		CustomerPhone:  custPhone,
+		UserName:       custName,
+		UserEmail:      custEmail,
 		TotalTickets:   order.TotalTickets,
 		TotalAmount:    order.TotalAmount,
 		PaymentStatus:  string(order.PaymentStatus),
@@ -788,11 +812,13 @@ func (s *orderService) CheckInTicket(checkerID uint64, req dto.CheckInRequest) (
 		}
 	}
 
-	// Cek apakah event telah melewati D-DAY
-	if ticket.OrderItem != nil && ticket.OrderItem.TicketTier != nil && ticket.OrderItem.TicketTier.Event != nil {
-		ev := ticket.OrderItem.TicketTier.Event
-		if isEventPastDDay(ev.StartAt, ev.EndAt) {
-			return nil, errors.New("tiket sudah hangus: event telah selesai (melewati batas waktu D-DAY)")
+	// Cek apakah event telah melewati D-DAY (kecuali Admin yang memiliki akses override sistem)
+	if checker.RoleID != 1 {
+		if ticket.OrderItem != nil && ticket.OrderItem.TicketTier != nil && ticket.OrderItem.TicketTier.Event != nil {
+			ev := ticket.OrderItem.TicketTier.Event
+			if isEventPastDDay(ev.StartAt, ev.EndAt) {
+				return nil, errors.New("tiket sudah hangus: event telah selesai (melewati batas waktu D-DAY)")
+			}
 		}
 	}
 

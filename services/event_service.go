@@ -278,6 +278,13 @@ func (s *eventService) AdminUpdateEventStatus(eventID uint64, status string) (*d
 		return nil, err
 	}
 
+	statusLower := strings.ToLower(strings.TrimSpace(status))
+	if statusLower == "ended" {
+		statusLower = string(models.EventStatusCompleted)
+	} else if statusLower == "suspended" || statusLower == "inactive" {
+		statusLower = string(models.EventStatusDraft)
+	}
+
 	validStatuses := map[string]bool{
 		string(models.EventStatusDraft):     true,
 		string(models.EventStatusPublished): true,
@@ -285,11 +292,11 @@ func (s *eventService) AdminUpdateEventStatus(eventID uint64, status string) (*d
 		string(models.EventStatusCancelled): true,
 	}
 
-	if !validStatuses[status] {
+	if !validStatuses[statusLower] {
 		return nil, fmt.Errorf("invalid event status: %s", status)
 	}
 
-	event.Status = models.EventStatus(status)
+	event.Status = models.EventStatus(statusLower)
 	if err := s.eventRepo.Update(event); err != nil {
 		return nil, err
 	}
@@ -458,6 +465,13 @@ func (s *eventService) mapEventToDetailResponse(event *models.Event) (*dto.Event
 		category = string(models.EventCategoryUmum)
 	}
 
+	status := string(event.Status)
+	if event.DeletedAt.Valid {
+		status = "ended"
+	} else if event.EndAt.Before(time.Now()) && status == string(models.EventStatusPublished) {
+		status = "ended"
+	}
+
 	return &dto.EventDetailResponse{
 		ID:              event.ID,
 		CreatedBy:       event.CreatedBy,
@@ -472,7 +486,7 @@ func (s *eventService) mapEventToDetailResponse(event *models.Event) (*dto.Event
 		EndAt:           event.EndAt,
 		BannerPath:      event.BannerPath,
 		BannerURL:       bannerURL,
-		Status:          string(event.Status),
+		Status:          status,
 		CreatedAt:       event.CreatedAt,
 		UpdatedAt:       event.UpdatedAt,
 		TicketTiers:     tierResponses,

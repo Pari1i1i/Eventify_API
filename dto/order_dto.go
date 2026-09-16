@@ -19,6 +19,11 @@ type OrderResponse struct {
 	UserID         uint64                 `json:"user_id"`
 	EventID        uint64                 `json:"event_id"`
 	EventName      string                 `json:"event_name,omitempty"`
+	CustomerName   string                 `json:"customer_name,omitempty"`
+	CustomerEmail  string                 `json:"customer_email,omitempty"`
+	CustomerPhone  string                 `json:"customer_phone,omitempty"`
+	UserName       string                 `json:"user_name,omitempty"`
+	UserEmail      string                 `json:"user_email,omitempty"`
 	TotalTickets   uint16                 `json:"total_tickets"`
 	TotalAmount    float64                `json:"total_amount"`
 	PaymentStatus  string                 `json:"payment_status"`
