@@ -598,6 +598,15 @@ func (s *orderService) ExpireStaleOrders() (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
+func isEventPastDDay(startAt, endAt time.Time) bool {
+	now := time.Now()
+	deadline := endAt
+	if deadline.IsZero() || deadline.Before(startAt) {
+		deadline = time.Date(startAt.Year(), startAt.Month(), startAt.Day(), 23, 59, 59, 0, startAt.Location())
+	}
+	return now.After(deadline)
+}
+
 func (s *orderService) GetMyTickets(userID uint64, page, limit int) (*utils.PaginatedData, error) {
 	if page < 1 {
 		page = 1
@@ -616,11 +625,36 @@ func (s *orderService) GetMyTickets(userID uint64, page, limit int) (*utils.Pagi
 		eventName := ""
 		tierName := ""
 		custName := ""
+		var eventID uint64
+		var startAt *time.Time
+		var endAt *time.Time
+		var bannerURL *string
+		var location string
+		status := string(tk.Status)
+		isExpired := false
+
 		if tk.OrderItem != nil {
 			if tk.OrderItem.TicketTier != nil {
 				tierName = tk.OrderItem.TicketTier.Name
 				if tk.OrderItem.TicketTier.Event != nil {
-					eventName = tk.OrderItem.TicketTier.Event.Name
+					ev := tk.OrderItem.TicketTier.Event
+					eventID = ev.ID
+					eventName = ev.Name
+					startAt = &ev.StartAt
+					endAt = &ev.EndAt
+					location = ev.Location
+					if ev.BannerPath != nil && *ev.BannerPath != "" {
+						url := fmt.Sprintf("%s/%s", s.cfg.AppURL, strings.TrimPrefix(*ev.BannerPath, "./"))
+						bannerURL = &url
+					}
+
+					// Event D-DAY check: jika event telah lewat D-DAY, tiket dihanguskan
+					if isEventPastDDay(ev.StartAt, ev.EndAt) {
+						isExpired = true
+						if tk.Status != models.TicketStatusCheckedIn {
+							status = "expired"
+						}
+					}
 				}
 			}
 			if tk.OrderItem.Order != nil && tk.OrderItem.Order.User != nil {
@@ -630,12 +664,19 @@ func (s *orderService) GetMyTickets(userID uint64, page, limit int) (*utils.Pagi
 
 		list = append(list, dto.TicketResponse{
 			ID:             tk.ID,
+			EventID:        eventID,
 			Code:           tk.Code,
-			Status:         string(tk.Status),
+			Status:         status,
 			CheckedInAt:    tk.CheckedInAt,
 			EventName:      eventName,
 			TicketTierName: tierName,
 			CustomerName:   custName,
+			StartAt:        startAt,
+			EndAt:          endAt,
+			EventDate:      startAt,
+			BannerURL:      bannerURL,
+			VenueName:      location,
+			IsExpired:      isExpired,
 		})
 	}
 
@@ -674,11 +715,34 @@ func (s *orderService) GetTicketByCode(userID uint64, userRole uint8, code strin
 	eventName := ""
 	tierName := ""
 	custName := ""
+	var eventID uint64
+	var startAt *time.Time
+	var endAt *time.Time
+	var bannerURL *string
+	var location string
+	status := string(tk.Status)
+	isExpired := false
+
 	if tk.OrderItem != nil {
 		if tk.OrderItem.TicketTier != nil {
 			tierName = tk.OrderItem.TicketTier.Name
 			if tk.OrderItem.TicketTier.Event != nil {
-				eventName = tk.OrderItem.TicketTier.Event.Name
+				ev := tk.OrderItem.TicketTier.Event
+				eventID = ev.ID
+				eventName = ev.Name
+				startAt = &ev.StartAt
+				endAt = &ev.EndAt
+				location = ev.Location
+				if ev.BannerPath != nil && *ev.BannerPath != "" {
+					url := fmt.Sprintf("%s/%s", s.cfg.AppURL, strings.TrimPrefix(*ev.BannerPath, "./"))
+					bannerURL = &url
+				}
+				if isEventPastDDay(ev.StartAt, ev.EndAt) {
+					isExpired = true
+					if tk.Status != models.TicketStatusCheckedIn {
+						status = "expired"
+					}
+				}
 			}
 		}
 		if tk.OrderItem.Order != nil && tk.OrderItem.Order.User != nil {
@@ -688,12 +752,19 @@ func (s *orderService) GetTicketByCode(userID uint64, userRole uint8, code strin
 
 	return &dto.TicketResponse{
 		ID:             tk.ID,
+		EventID:        eventID,
 		Code:           tk.Code,
-		Status:         string(tk.Status),
+		Status:         status,
 		CheckedInAt:    tk.CheckedInAt,
 		EventName:      eventName,
 		TicketTierName: tierName,
 		CustomerName:   custName,
+		StartAt:        startAt,
+		EndAt:          endAt,
+		EventDate:      startAt,
+		BannerURL:      bannerURL,
+		VenueName:      location,
+		IsExpired:      isExpired,
 	}, nil
 }
 
@@ -714,6 +785,14 @@ func (s *orderService) CheckInTicket(checkerID uint64, req dto.CheckInRequest) (
 		if ticket.OrderItem == nil || ticket.OrderItem.TicketTier == nil || ticket.OrderItem.TicketTier.Event == nil ||
 			ticket.OrderItem.TicketTier.Event.CreatedBy == nil || *ticket.OrderItem.TicketTier.Event.CreatedBy != checkerID {
 			return nil, errors.New("forbidden: you can only scan and check-in tickets for your own event")
+		}
+	}
+
+	// Cek apakah event telah melewati D-DAY
+	if ticket.OrderItem != nil && ticket.OrderItem.TicketTier != nil && ticket.OrderItem.TicketTier.Event != nil {
+		ev := ticket.OrderItem.TicketTier.Event
+		if isEventPastDDay(ev.StartAt, ev.EndAt) {
+			return nil, errors.New("tiket sudah hangus: event telah selesai (melewati batas waktu D-DAY)")
 		}
 	}
 

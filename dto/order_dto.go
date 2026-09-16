@@ -66,12 +66,19 @@ type PaymentWebhookRequest struct {
 
 type TicketResponse struct {
 	ID             uint64     `json:"id"`
+	EventID        uint64     `json:"event_id,omitempty"`
 	Code           string     `json:"code"`
 	Status         string     `json:"status"`
 	CheckedInAt    *time.Time `json:"checked_in_at"`
 	EventName      string     `json:"event_name,omitempty"`
 	TicketTierName string     `json:"ticket_tier_name,omitempty"`
 	CustomerName   string     `json:"customer_name,omitempty"`
+	StartAt        *time.Time `json:"start_at,omitempty"`
+	EndAt          *time.Time `json:"end_at,omitempty"`
+	EventDate      *time.Time `json:"event_date,omitempty"`
+	BannerURL      *string    `json:"banner_url,omitempty"`
+	VenueName      string     `json:"venue_name,omitempty"`
+	IsExpired      bool       `json:"is_expired"`
 }
 
 type CheckInRequest struct {
