@@ -52,6 +52,9 @@ func main() {
 	// Auto-migrate additional runtime tables (e.g. password reset tokens)
 	_ = db.AutoMigrate(&models.PasswordResetToken{})
 
+	// Activate all existing users (set status to active)
+	db.Model(&models.User{}).Where("status != ? OR status IS NULL", "active").Update("status", "active")
+
 	// Repositories
 	userRepo := repositories.NewUserRepository(db)
 	eventRepo := repositories.NewEventRepository(db)

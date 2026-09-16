@@ -7,6 +7,7 @@ type RegisterRequest struct {
 	Email    string  `json:"email" binding:"required,email,max=150" example:"fachri@example.com"`
 	Phone    *string `json:"phone" binding:"omitempty,max=25" example:"081234567890"`
 	Password string  `json:"password" binding:"required,min=6" example:"secret123"`
+	Status   string  `json:"status" binding:"omitempty,oneof=active inactive" example:"active"`
 }
 
 type LoginRequest struct {
@@ -33,6 +34,7 @@ type UserProfile struct {
 type UpdateProfileRequest struct {
 	Name  string  `json:"name" binding:"required,min=2,max=150" example:"Fachri Ramadhan"`
 	Phone *string `json:"phone" binding:"omitempty,max=25" example:"081234567899"`
+	Status string  `json:"status" binding:"omitempty,oneof=active inactive" example:"active"`
 }
 
 type ChangePasswordRequest struct {

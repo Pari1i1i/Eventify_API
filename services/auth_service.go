@@ -47,13 +47,22 @@ func (s *authService) Register(req dto.RegisterRequest) (*dto.AuthResponse, erro
 		return nil, errors.New("failed to hash password")
 	}
 
+	status := req.Status
+	if status == "" {
+		status = "active"
+	}
+	// Validate status
+	if status != "active" && status != "inactive" {
+		return nil, errors.New("status must be either 'active' or 'inactive'")
+	}
+
 	user := &models.User{
 		RoleID:   3, // default customer
 		Name:     req.Name,
 		Email:    req.Email,
 		Phone:    req.Phone,
 		Password: hashedPassword,
-		Status:   "active",
+		Status:   status,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -153,6 +162,13 @@ func (s *authService) UpdateProfile(userID uint64, req dto.UpdateProfileRequest)
 
 	user.Name = req.Name
 	user.Phone = req.Phone
+	if req.Status != "" {
+		// Validate status
+		if req.Status != "active" && req.Status != "inactive" {
+			return nil, errors.New("status must be either 'active' or 'inactive'")
+		}
+		user.Status = req.Status
+	}
 
 	if err := s.userRepo.Update(user); err != nil {
 		return nil, err
