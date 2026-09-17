@@ -25,6 +25,10 @@ uploads/
 tmp/
 temp/
 
+# Archive & backup files
+*.zip
+.git.zip
+
 # IDE & OS files
 .vscode/
 .idea/
